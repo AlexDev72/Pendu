@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -5,6 +6,7 @@
     <link rel="stylesheet" type="text/css" href="stylePendu.css">
     <script language="JavaScript">
         var motSecret;
+        var imagesPendu = []; // Tableau pour précharger les images
         
         var now = new Date(); // Date d'aujourd'hui
         var tableauMot = new Array(); // Le tableau qui contient les lettres du mot à trouver
@@ -33,6 +35,40 @@
         motSecret = mots[now.getSeconds() % mots.length];
         tailleMot = motSecret.length;
         
+        // Fonction pour basculer entre dark mode et light mode
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+        }
+        
+        // Vérifie le préférence utilisateur au chargement
+        function checkDarkModePreference() {
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.body.classList.add('dark-mode');
+            }
+        }
+        
+        // Préchargement des images du pendu
+        function preloadImages() {
+            for (var i = 0; i <= 10; i++) {
+                imagesPendu[i] = new Image();
+                imagesPendu[i].src = "images/pendu_" + i + ".png";
+            }
+        }
+        
+        // Appel des fonctions au chargement de la page
+        window.onload = function() {
+            preloadImages();
+            checkDarkModePreference();
+            
+            // Créer le bouton de dark mode
+            var darkModeButton = document.createElement('button');
+            darkModeButton.className = 'dark-mode-toggle';
+            darkModeButton.innerHTML = '🌓';
+            darkModeButton.onclick = toggleDarkMode;
+            document.body.appendChild(darkModeButton);
+        };
+        
         // Permet de changer la couleur des touches du clavier
         function changeCouleur(element, couleur) {
             element.style.backgroundColor = couleur;
@@ -40,12 +76,11 @@
 
         // Gère tous les traitements à faire lorsqu'on appuie sur une touche
         function proposer(element) {
-            // Si la couleur de fond est lightgreen, c'est qu'on a déjà essayé - on quitte la fonction
-            if (element.style.backgroundColor == "lightGreen" || fini) return;
+            // Si la couleur de fond est lightgreen ou rouge, c'est qu'on a déjà essayé - on quitte la fonction
+            if (element.style.backgroundColor == "lightGreen" || element.style.backgroundColor == "#e74c3c" || fini) return;
 
-            // On récupère la lettre du clavier et on met la touche en lightgreen (pour signaler qu'elle est cliquée)
+            // On récupère la lettre du clavier
             var lettre = element.innerHTML;
-            changeCouleur(element, "lightGreen");
 
             // On met la variable trouvé à false
             var trouve = false;
@@ -60,21 +95,29 @@
                 }
             }
 
-            // Si la lettre n'est pas présente, trouvé vaut toujours false :
-            if (!trouve) {
+            // Changement de couleur selon si la lettre est trouvée ou non
+            if (trouve) {
+                changeCouleur(element, "lightGreen");
+            } else {
+                changeCouleur(element, "#e74c3c"); // Rouge pour les lettres incorrectes
                 coupsManques++;
-                document.images['pendu'].src = "images/pendu_" + coupsManques + ".png"; // On change l'image du pendu
+                // On utilise l'image préchargée
+                document.images['pendu'].src = imagesPendu[coupsManques].src;
 
-                // Si on a raté 9 fois :
-                if (coupsManques == 9) {
-                    alert("Vous avez perdu !");
-                    for (var i = 0; i < tailleMot; i++) tableauMot[i].style.visibility = 'visible';
-                    fini = true;
+                // Si on a raté 10 fois :
+                if (coupsManques == 10) {
+                    setTimeout(function() {
+                        alert("Vous avez perdu !");
+                        for (var i = 0; i < tailleMot; i++) tableauMot[i].style.visibility = 'visible';
+                        fini = true;
+                    }, 100);
                 }
             }
             if (lettresTrouvees == tailleMot) {
-                alert("Bravo ! Vous avez découvert le mot secret !");
-                fini = true;
+                setTimeout(function() {
+                    alert("Bravo ! Vous avez découvert le mot secret !");
+                    fini = true;
+                }, 100);
             }
         }
     </script>
@@ -83,9 +126,20 @@
 <body>
 <center>
 <div id="page">
-    <img name="pendu" class="pendu" src="images/pendu_0.png">
-    
+
     <h1>Jeu de pendu</h1>
+    
+    <img name="pendu" class="pendu" src="images/pendu_0.png">
+
+    <table id="mot">
+        <tr>
+            <script language="javascript">
+                for (var i = 0; i < tailleMot; i++) 
+                    document.write("<td> <p id=\"" + i + "\">" + motSecret.charAt(i) + "</p></td>");
+            </script>
+        </tr>
+    </table>
+   
 
     <h2>Entrez une lettre grâce au clavier ci-dessous ; si elle est dans le mot secret, elle sera affichée mais sinon... la sentence se rapprochera !</h2>
 
@@ -125,15 +179,6 @@
     </table>
     <br>
     <a class="lien" href="javascript:location.reload();">Nouvelle partie</a>
-
-    <table id="mot">
-        <tr>
-            <script language="javascript">
-                for (var i = 0; i < tailleMot; i++) 
-                    document.write("<td> <p id=\"" + i + "\">" + motSecret.charAt(i) + "</p></td>");
-            </script>
-        </tr>
-    </table>
 
     <script language="javascript">
         for (var i = 0; i < tailleMot; i++) 
